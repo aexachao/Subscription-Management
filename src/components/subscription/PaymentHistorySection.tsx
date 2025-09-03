@@ -41,7 +41,7 @@ export function PaymentHistorySection({ subscriptionId, subscriptionName }: Paym
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPayment, setEditingPayment] = useState<PaymentRecord | null>(null)
   const { toast } = useToast()
-  const { apiKey } = useSettingsStore()
+  // ...existing code...
 
 
   // Fetch payment history for this subscription

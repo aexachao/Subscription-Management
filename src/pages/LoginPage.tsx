@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as Form from '@radix-ui/react-form';
+import { Button } from '@/components/ui/button';
 
 const LoginPage = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -8,7 +9,6 @@ const LoginPage = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
