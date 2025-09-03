@@ -1,5 +1,6 @@
-import { Route, Routes } from "react-router-dom"
-import { Suspense, lazy } from "react"
+import { Route, Routes, useLocation, Navigate } from "react-router-dom"
+import { Suspense, lazy, useState } from "react"
+import LoginPage from "./pages/LoginPage"
 import { Toaster } from "./components/ui/toaster"
 import { ThemeProvider } from "./components/ThemeProvider"
 import { MainLayout } from "./components/layouts/MainLayout"
@@ -13,25 +14,53 @@ const ExpenseReportsPage = lazy(() => import("./pages/ExpenseReportsPage").then(
 const NotificationHistoryPage = lazy(() => import("./pages/NotificationHistoryPage").then(module => ({ default: module.NotificationHistoryPage })))
 
 
+function useAuth() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+  const login = () => {
+    localStorage.setItem('isLoggedIn', 'true');
+    setIsLoggedIn(true);
+  };
+  const logout = () => {
+    localStorage.removeItem('isLoggedIn');
+    setIsLoggedIn(false);
+  };
+  return { isLoggedIn, login, logout };
+}
+
 function App() {
-  const { t } = useTranslation()
-  
+  const { t } = useTranslation();
+  const { isLoggedIn, login } = useAuth();
+  const location = useLocation();
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <MainLayout>
         <Suspense fallback={<div className="flex items-center justify-center h-64">{t('loading')}</div>}>
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/subscriptions" element={<SubscriptionsPage />} />
-            <Route path="/expense-reports" element={<ExpenseReportsPage />} />
-            <Route path="/notifications" element={<NotificationHistoryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/login" element={<LoginPage onLogin={login} />} />
+            <Route
+              path="/*"
+              element={
+                isLoggedIn ? (
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/subscriptions" element={<SubscriptionsPage />} />
+                    <Route path="/expense-reports" element={<ExpenseReportsPage />} />
+                    <Route path="/notifications" element={<NotificationHistoryPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                  </Routes>
+                ) : (
+                  <Navigate to="/login" state={{ from: location }} replace />
+                )
+              }
+            />
           </Routes>
         </Suspense>
       </MainLayout>
       <Toaster />
     </ThemeProvider>
-  )
+  );
 }
 
 export default App

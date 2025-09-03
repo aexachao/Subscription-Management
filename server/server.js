@@ -63,6 +63,10 @@ const protectedApiRouter = express.Router();
 
 // Apply auth middleware to the protected router
 protectedApiRouter.use(apiKeyAuth);
+    
+  // 注册登录路由
+  const authRouter = require('./routes/auth');
+  apiRouter.use('/login', authRouter);
 
 // Register route modules
 apiRouter.use('/subscriptions', createSubscriptionRoutes(db));
