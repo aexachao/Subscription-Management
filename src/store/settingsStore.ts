@@ -62,17 +62,16 @@ interface SettingsState {
   error: string | null
 }
 
-  // ...existing code...
+export const initialSettings = {
   currency: BASE_CURRENCY,
   theme: 'system' as ThemeType,
   showOriginalCurrency: true,
-
   exchangeRates: DEFAULT_EXCHANGE_RATES,
   lastExchangeRateUpdate: null,
   exchangeRateConfigStatus: null,
   isLoading: false,
   error: null
-}
+};
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
