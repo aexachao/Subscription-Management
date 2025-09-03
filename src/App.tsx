@@ -35,14 +35,14 @@ function App() {
   const location = useLocation();
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <MainLayout>
-        <Suspense fallback={<div className="flex items-center justify-center h-64">{t('loading')}</div>}>
-          <Routes>
-            <Route path="/login" element={<LoginPage onLogin={login} />} />
-            <Route
-              path="/*"
-              element={
-                isLoggedIn ? (
+      <Suspense fallback={<div className="flex items-center justify-center h-64">{t('loading')}</div>}>
+        <Routes>
+          <Route path="/login" element={<LoginPage onLogin={login} />} />
+          <Route
+            path="/*"
+            element={
+              isLoggedIn ? (
+                <MainLayout>
                   <Routes>
                     <Route path="/" element={<HomePage />} />
                     <Route path="/subscriptions" element={<SubscriptionsPage />} />
@@ -50,14 +50,14 @@ function App() {
                     <Route path="/notifications" element={<NotificationHistoryPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
-                ) : (
-                  <Navigate to="/login" state={{ from: location }} replace />
-                )
-              }
-            />
-          </Routes>
-        </Suspense>
-      </MainLayout>
+                </MainLayout>
+              ) : (
+                <Navigate to="/login" state={{ from: location }} replace />
+              )
+            }
+          />
+        </Routes>
+      </Suspense>
       <Toaster />
     </ThemeProvider>
   );

@@ -7,6 +7,7 @@ exports.login = (req, res) => {
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (username === adminUsername && password === adminPassword) {
+    req.session.isLoggedIn = true;
     return res.json({ success: true });
   } else {
     return res.status(401).json({ success: false, message: '账号或密码错误' });

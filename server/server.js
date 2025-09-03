@@ -1,4 +1,5 @@
 const express = require('express');
+const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
 const ExchangeRateScheduler = require('./services/exchangeRateScheduler');
@@ -31,8 +32,14 @@ const app = express();
 const port = process.env.PORT || 3001; // Use PORT from environment or default to 3001
 
 // Middleware
-app.use(cors());
+app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'subscription_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }
+}));
 
 // Database setup
 const db = initializeDatabase();
@@ -60,23 +67,22 @@ app.get('/api/health', (req, res) => {
 // --- API Routers ---
 const apiRouter = express.Router();
 const protectedApiRouter = express.Router();
+const requireLogin = require('./middleware/requireLogin');
 
-// Apply auth middleware to the protected router
-protectedApiRouter.use(apiKeyAuth);
     
   // 注册登录路由
   const authRouter = require('./routes/auth');
   apiRouter.use('/login', authRouter);
 
 // Register route modules
-apiRouter.use('/subscriptions', createSubscriptionRoutes(db));
-protectedApiRouter.use('/subscriptions', createProtectedSubscriptionRoutes(db));
-protectedApiRouter.use('/subscriptions', createSubscriptionManagementRoutes(db));
+apiRouter.use('/subscriptions', requireLogin, createSubscriptionRoutes(db));
+protectedApiRouter.use('/subscriptions', requireLogin, createProtectedSubscriptionRoutes(db));
+protectedApiRouter.use('/subscriptions', requireLogin, createSubscriptionManagementRoutes(db));
 
-apiRouter.use('/analytics', createAnalyticsRoutes(db));
+apiRouter.use('/analytics', requireLogin, createAnalyticsRoutes(db));
 
-apiRouter.use('/settings', createSettingsRoutes(db));
-protectedApiRouter.use('/settings', createProtectedSettingsRoutes(db));
+apiRouter.use('/settings', requireLogin, createSettingsRoutes(db));
+protectedApiRouter.use('/settings', requireLogin, createProtectedSettingsRoutes(db));
 
 apiRouter.use('/exchange-rates', createExchangeRateRoutes(db));
 protectedApiRouter.use('/exchange-rates', createProtectedExchangeRateRoutes(db, exchangeRateScheduler));
