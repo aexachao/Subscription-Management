@@ -15,17 +15,32 @@ const NotificationHistoryPage = lazy(() => import("./pages/NotificationHistoryPa
 
 
 function useAuth() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('isLoggedIn') === 'true';
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // 检查后端 session 状态
+  const checkLogin = async () => {
+    try {
+      const res = await fetch('/api/health', { credentials: 'include' });
+      if (res.ok) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    } catch {
+      setIsLoggedIn(false);
+    }
+  };
+  // 登录后刷新 session 状态
   const login = () => {
-    localStorage.setItem('isLoggedIn', 'true');
     setIsLoggedIn(true);
+    checkLogin();
   };
   const logout = () => {
-    localStorage.removeItem('isLoggedIn');
     setIsLoggedIn(false);
   };
+  // 首次挂载时检查登录状态
+  React.useEffect(() => {
+    checkLogin();
+  }, []);
   return { isLoggedIn, login, logout };
 }
 
