@@ -2,12 +2,36 @@ const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const ExchangeRateScheduler = require('./services/exchangeRateScheduler');
 const SubscriptionRenewalScheduler = require('./services/subscriptionRenewalScheduler');
 const NotificationScheduler = require('./services/notificationScheduler');
 
 // Load environment variables from root .env file (unified configuration)
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+
+// Load or generate a persistent session secret if not provided via ENV
+function loadSessionSecret() {
+  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
+  const secretFile = '/app/data/session_secret';
+  try {
+    if (fs.existsSync(secretFile)) {
+      const secret = fs.readFileSync(secretFile, 'utf8').trim();
+      if (secret) return secret;
+    }
+    const generated = crypto.randomBytes(32).toString('hex');
+    try {
+      fs.writeFileSync(secretFile, generated, { mode: 0o600 });
+      // eslint-disable-next-line no-console
+      console.log('🔐 Generated persistent SESSION_SECRET at /app/data/session_secret');
+    } catch {}
+    return generated;
+  } catch {
+    // Fallback to volatile secret if filesystem not writable
+    return crypto.randomBytes(32).toString('hex');
+  }
+}
 
 // Import modules
 const { initializeDatabase } = require('./config/database');
@@ -34,11 +58,21 @@ const port = process.env.PORT || 3001; // Use PORT from environment or default t
 // Middleware
 app.use(cors({ credentials: true, origin: true }));
 app.use(express.json());
+
+// 在反向代理/容器后启用 trust proxy，确保正确识别 HTTPS
+app.set('trust proxy', 1);
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'subscription_secret',
+  secret: loadSessionSecret(),
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 }
+  cookie: {
+    httpOnly: true,
+    // 生产环境下通常处于 HTTPS + 反向代理，使用 lax 并可选启用 secure
+    sameSite: 'lax',
+    secure: !!(process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true'),
+    maxAge: 7 * 24 * 60 * 60 * 1000
+  }
 }));
 
 // Database setup

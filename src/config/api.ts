@@ -27,9 +27,12 @@ apiClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    if (error.response?.status === 401) {
-      // Redirect to login page on authentication failure
-      window.location.href = '/login';
+    const status = error.response?.status;
+    if (status === 401) {
+      // 避免在登录页重复跳转导致无限刷新
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
