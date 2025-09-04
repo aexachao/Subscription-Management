@@ -144,8 +144,7 @@ class ExchangeRateScheduler {
     getStatus() {
         return {
             isRunning: this.isRunning,
-            nextRun: this.task ? this.task.nextDate() : null,
-            hasApiKey: !!this.exchangeRateService.apiKey
+            nextRun: this.task ? this.task.nextDate() : null
         };
     }
 }

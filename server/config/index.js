@@ -54,19 +54,11 @@ class Config {
     }
 
     /**
-     * 获取应用程序端口
+     * 获取端口号
      * @returns {number} 端口号
      */
     getPort() {
         return parseInt(process.env.PORT) || 3001;
-    }
-
-    /**
-     * 获取 API 密钥
-     * @returns {string|null} API 密钥
-     */
-    getApiKey() {
-        return process.env.API_KEY || null;
     }
 
     /**
@@ -166,7 +158,6 @@ class Config {
             databasePath: this.getDatabasePath(),
             logLevel: this.getLogLevel(),
             baseCurrency: this.getBaseCurrency(),
-            hasApiKey: !!this.getApiKey(),
             hasTianApiKey: !!this.getTianApiKey(),
             databaseExists: this.databaseExists()
         };
@@ -183,7 +174,6 @@ class Config {
         console.log(`   Database Path: ${summary.databasePath}`);
         console.log(`   Log Level: ${summary.logLevel}`);
         console.log(`   Base Currency: ${summary.baseCurrency}`);
-        console.log(`   API Key: ${summary.hasApiKey ? '✅ Set' : '❌ Not set'}`);
         console.log(`   TianAPI Key: ${summary.hasTianApiKey ? '✅ Set' : '❌ Not set'}`);
         console.log(`   Database Exists: ${summary.databaseExists ? '✅ Yes' : '❌ No'}`);
     }

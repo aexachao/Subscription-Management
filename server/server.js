@@ -11,7 +11,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 // Import modules
 const { initializeDatabase } = require('./config/database');
-const { apiKeyAuth } = require('./middleware/auth');
+const { sessionAuth } = require('./middleware/auth');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createSubscriptionRoutes, createProtectedSubscriptionRoutes } = require('./routes/subscriptions');
 const { createSubscriptionManagementRoutes } = require('./routes/subscriptionManagement');

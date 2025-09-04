@@ -1,19 +1,39 @@
-// API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
+import axios from 'axios';
 
-// API Headers
-export const getHeaders = (method: string = 'GET'): HeadersInit => {
-  const headers: HeadersInit = {};
-  if (method !== 'GET') {
-    headers['Content-Type'] = 'application/json';
+// Create axios instance with default config
+export const apiClient = axios.create({
+  baseURL: '/api',
+  timeout: 10000,
+  withCredentials: true, // Enable cookies for session authentication
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor for authentication
+apiClient.interceptors.request.use(
+  (config) => {
+    // Add any additional headers if needed
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  // 直接从环境变量读取 API_KEY
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (apiKey) {
-    headers['X-API-KEY'] = apiKey;
+);
+
+// Add response interceptor for handling authentication errors
+apiClient.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Redirect to login page on authentication failure
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
   }
-  return headers;
-};
+);
 
 // API Response Types
 export interface ApiResponse<T> {

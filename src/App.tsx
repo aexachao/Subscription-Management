@@ -1,5 +1,6 @@
+import React from 'react';
 import { Route, Routes, useLocation, Navigate } from "react-router-dom"
-import { Suspense, lazy, useState } from "react"
+import { Suspense, lazy, useState, useEffect } from "react"
 import LoginPage from "./pages/LoginPage"
 import { Toaster } from "./components/ui/toaster"
 import { ThemeProvider } from "./components/ThemeProvider"
@@ -16,17 +17,21 @@ const NotificationHistoryPage = lazy(() => import("./pages/NotificationHistoryPa
 
 function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checking, setChecking] = useState(true);
   // 检查后端 session 状态
   const checkLogin = async () => {
     try {
-      const res = await fetch('/api/health', { credentials: 'include' });
+      const res = await fetch('/api/login/me', { credentials: 'include' });
       if (res.ok) {
-        setIsLoggedIn(true);
+        const data = await res.json();
+        setIsLoggedIn(Boolean(data?.data?.isLoggedIn));
       } else {
         setIsLoggedIn(false);
       }
     } catch {
       setIsLoggedIn(false);
+    } finally {
+      setChecking(false);
     }
   };
   // 登录后刷新 session 状态
@@ -38,40 +43,42 @@ function useAuth() {
     setIsLoggedIn(false);
   };
   // 首次挂载时检查登录状态
-  React.useEffect(() => {
+  useEffect(() => {
     checkLogin();
   }, []);
-  return { isLoggedIn, login, logout };
+  return { isLoggedIn, login, logout, checking };
 }
 
 function App() {
   const { t } = useTranslation();
-  const { isLoggedIn, login } = useAuth();
+  const { isLoggedIn, login, checking } = useAuth();
   const location = useLocation();
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <Suspense fallback={<div className="flex items-center justify-center h-64">{t('loading')}</div>}>
-        <Routes>
-          <Route path="/login" element={<LoginPage onLogin={login} />} />
-          <Route
-            path="/*"
-            element={
-              isLoggedIn ? (
-                <MainLayout>
-                  <Routes>
-                    <Route path="/" element={<HomePage />} />
-                    <Route path="/subscriptions" element={<SubscriptionsPage />} />
-                    <Route path="/expense-reports" element={<ExpenseReportsPage />} />
-                    <Route path="/notifications" element={<NotificationHistoryPage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                  </Routes>
-                </MainLayout>
-              ) : (
-                <Navigate to="/login" state={{ from: location }} replace />
-              )
-            }
-          />
-        </Routes>
+        {!checking && (
+          <Routes>
+            <Route path="/login" element={<LoginPage onLogin={login} />} />
+            <Route
+              path="/*"
+              element={
+                isLoggedIn ? (
+                  <MainLayout>
+                    <Routes>
+                      <Route path="/" element={<HomePage />} />
+                      <Route path="/subscriptions" element={<SubscriptionsPage />} />
+                      <Route path="/expense-reports" element={<ExpenseReportsPage />} />
+                      <Route path="/notifications" element={<NotificationHistoryPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                    </Routes>
+                  </MainLayout>
+                ) : (
+                  <Navigate to="/login" state={{ from: location }} replace />
+                )
+              }
+            />
+          </Routes>
+        )}
       </Suspense>
       <Toaster />
     </ThemeProvider>

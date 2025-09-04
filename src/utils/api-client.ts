@@ -1,123 +1,71 @@
-import { API_BASE_URL, getHeaders, ApiError } from '@/config/api';
+import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
-type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  body?: unknown;
-  headers?: HeadersInit;
-  signal?: AbortSignal;
-};
+// Create axios instance with default config
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: '/api',
+  timeout: 10000,
+  withCredentials: true, // Enable cookies for session authentication
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
+// Add request interceptor for authentication
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Add any additional headers if needed
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for handling authentication errors
+axiosInstance.interceptors.response.use(
+  (response: AxiosResponse) => {
+    return response;
+  },
+  (error: AxiosError) => {
+    if (error.response?.status === 401) {
+      // Redirect to login page on authentication failure
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Custom API client class
 class ApiClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private pendingRequests = new Map<string, Promise<any>>();
+  private client: AxiosInstance;
 
-  private getCacheKey(url: string, options?: RequestOptions): string {
-    return `${options?.method || 'GET'}-${url}`;
+  constructor(client: AxiosInstance) {
+    this.client = client;
   }
 
-  async request<T>(endpoint: string, options?: RequestOptions): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const method = options?.method || 'GET';
-    
-    // Deduplicate GET requests
-    if (method === 'GET') {
-      const cacheKey = this.getCacheKey(endpoint, options);
-      const pending = this.pendingRequests.get(cacheKey);
-      if (pending) {
-        return pending;
-      }
-    }
-
-    const requestPromise = this.performRequest<T>(url, method, options);
-
-    if (method === 'GET') {
-      const cacheKey = this.getCacheKey(endpoint, options);
-      this.pendingRequests.set(cacheKey, requestPromise);
-      
-      requestPromise.finally(() => {
-        this.pendingRequests.delete(cacheKey);
-      });
-    }
-
-    return requestPromise;
+  async get<T>(endpoint: string, config?: any): Promise<T> {
+    const response = await this.client.get<T>(endpoint, config);
+    return response.data;
   }
 
-  private async performRequest<T>(
-    url: string,
-    method: string,
-    options?: RequestOptions
-  ): Promise<T> {
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          ...getHeaders(method),
-          ...options?.headers,
-        },
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-        signal: options?.signal,
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        throw new ApiError(
-          responseData.error || responseData.message || 'Request failed',
-          response.status,
-          responseData
-        );
-      }
-
-      // Handle new unified response format
-      if (responseData.success !== undefined) {
-        if (responseData.success && responseData.data !== undefined) {
-          return responseData.data as T;
-        } else if (!responseData.success) {
-          throw new ApiError(
-            responseData.error || responseData.message || 'Request failed',
-            response.status,
-            responseData
-          );
-        }
-      }
-
-      // Fallback for old format
-      return responseData as T;
-    } catch (error) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
-      
-      if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new ApiError('Network error. Please check your connection.');
-      }
-
-      throw new ApiError(
-        error instanceof Error ? error.message : 'An unexpected error occurred'
-      );
-    }
+  async post<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    const response = await this.client.post<T>(endpoint, data, config);
+    return response.data;
   }
 
-  // Convenience methods
-  async get<T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'GET' });
+  async put<T>(endpoint: string, data?: any, config?: any): Promise<T> {
+    const response = await this.client.put<T>(endpoint, data, config);
+    return response.data;
   }
 
-  async post<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body });
-  }
-
-  async put<T>(endpoint: string, body?: unknown, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'PUT', body });
-  }
-
-  async delete<T>(endpoint: string, options?: Omit<RequestOptions, 'method' | 'body'>): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'DELETE' });
+  async delete<T>(endpoint: string, config?: any): Promise<T> {
+    const response = await this.client.delete<T>(endpoint, config);
+    return response.data;
   }
 }
 
 // Export singleton instance
-export const apiClient = new ApiClient();
+export const apiClient = new ApiClient(axiosInstance);
 
 // Export type for dependency injection if needed
 export type { ApiClient };

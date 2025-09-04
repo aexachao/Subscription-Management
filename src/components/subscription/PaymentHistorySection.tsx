@@ -41,8 +41,6 @@ export function PaymentHistorySection({ subscriptionId, subscriptionName }: Paym
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingPayment, setEditingPayment] = useState<PaymentRecord | null>(null)
   const { toast } = useToast()
-  // ...existing code...
-
 
   // Fetch payment history for this subscription
   const fetchPaymentHistory = useCallback(async () => {
@@ -77,7 +75,7 @@ export function PaymentHistorySection({ subscriptionId, subscriptionName }: Paym
     handleEditPayment: editPayment,
     handleDeleteClick,
     deleteConfirmation
-  } = usePaymentOperations(apiKey, fetchPaymentHistory)
+  } = usePaymentOperations(fetchPaymentHistory)
 
   // Handle adding new payment
   const handleAddPayment = async (paymentData: PaymentApiData) => {

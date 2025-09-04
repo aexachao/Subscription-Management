@@ -1,21 +1,26 @@
-// Middleware to check API Key
-const apiKeyAuth = (req, res, next) => {
-    const apiKey = req.get('X-API-KEY');
-    const serverApiKey = process.env.API_KEY;
-
-    if (!serverApiKey) {
-        // This is a server configuration error
-        console.error('API_KEY not found in .env file. Server is not secured.');
-        return res.status(500).json({ message: 'API Key not configured on the server.' });
-    }
-
-    if (apiKey && apiKey === serverApiKey) {
-        next();
-    } else {
-        res.status(401).json({ message: 'Invalid or missing API Key' });
-    }
+const sessionAuth = (req, res, next) => {
+  // Check if user is authenticated via session
+  if (req.session && req.session.userId) {
+    return next();
+  }
+  
+  // Check if it's a login request
+  if (req.path === '/login' && req.method === 'POST') {
+    return next();
+  }
+  
+  // Check if it's a health check
+  if (req.path === '/health') {
+    return next();
+  }
+  
+  // Unauthorized
+  res.status(401).json({ 
+    success: false, 
+    message: 'Authentication required' 
+  });
 };
 
 module.exports = {
-    apiKeyAuth
+  sessionAuth
 };
