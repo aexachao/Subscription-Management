@@ -1,9 +1,6 @@
 const express = require('express');
-const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
 const ExchangeRateScheduler = require('./services/exchangeRateScheduler');
 const SubscriptionRenewalScheduler = require('./services/subscriptionRenewalScheduler');
 const NotificationScheduler = require('./services/notificationScheduler');
@@ -11,31 +8,9 @@ const NotificationScheduler = require('./services/notificationScheduler');
 // Load environment variables from root .env file (unified configuration)
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-// Load or generate a persistent session secret if not provided via ENV
-function loadSessionSecret() {
-  if (process.env.SESSION_SECRET) return process.env.SESSION_SECRET;
-  const secretFile = '/app/data/session_secret';
-  try {
-    if (fs.existsSync(secretFile)) {
-      const secret = fs.readFileSync(secretFile, 'utf8').trim();
-      if (secret) return secret;
-    }
-    const generated = crypto.randomBytes(32).toString('hex');
-    try {
-      fs.writeFileSync(secretFile, generated, { mode: 0o600 });
-      // eslint-disable-next-line no-console
-      console.log('🔐 Generated persistent SESSION_SECRET at /app/data/session_secret');
-    } catch {}
-    return generated;
-  } catch {
-    // Fallback to volatile secret if filesystem not writable
-    return crypto.randomBytes(32).toString('hex');
-  }
-}
-
 // Import modules
 const { initializeDatabase } = require('./config/database');
-const { sessionAuth } = require('./middleware/auth');
+const { initSession, requireAuth } = require('./middleware/auth');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { createSubscriptionRoutes, createProtectedSubscriptionRoutes } = require('./routes/subscriptions');
 const { createSubscriptionManagementRoutes } = require('./routes/subscriptionManagement');
@@ -56,24 +31,12 @@ const app = express();
 const port = process.env.PORT || 3001; // Use PORT from environment or default to 3001
 
 // Middleware
-app.use(cors({ credentials: true, origin: true }));
-app.use(express.json());
-
-// 在反向代理/容器后启用 trust proxy，确保正确识别 HTTPS
-app.set('trust proxy', 1);
-
-app.use(session({
-  secret: loadSessionSecret(),
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    // 生产环境下通常处于 HTTPS + 反向代理，使用 lax 并可选启用 secure
-    sameSite: 'lax',
-    secure: !!(process.env.NODE_ENV === 'production' && process.env.FORCE_HTTPS === 'true'),
-    maxAge: 7 * 24 * 60 * 60 * 1000
-  }
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? false : true,
+  credentials: true
 }));
+app.use(express.json());
+app.use(initSession);
 
 // Database setup
 const db = initializeDatabase();
@@ -98,56 +61,59 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'Subscription Management Backend is running!', status: 'healthy' });
 });
 
+// Auth routes (no authentication required)
+app.use('/api/auth', require('./routes/auth'));
+
 // --- API Routers ---
 const apiRouter = express.Router();
 const protectedApiRouter = express.Router();
-const requireLogin = require('./middleware/requireLogin');
 
-// 注册登录路由
-const authRouter = require('./routes/auth');
-apiRouter.use('/login', authRouter);
+// Apply auth middleware to the protected router
+protectedApiRouter.use(requireAuth);
 
 // Register route modules
-apiRouter.use('/subscriptions', requireLogin, createSubscriptionRoutes(db));
-protectedApiRouter.use('/subscriptions', requireLogin, createProtectedSubscriptionRoutes(db));
-protectedApiRouter.use('/subscriptions', requireLogin, createSubscriptionManagementRoutes(db));
+apiRouter.use('/subscriptions', createSubscriptionRoutes(db));
+protectedApiRouter.use('/subscriptions', createProtectedSubscriptionRoutes(db));
+protectedApiRouter.use('/subscriptions', createSubscriptionManagementRoutes(db));
 
-apiRouter.use('/analytics', requireLogin, createAnalyticsRoutes(db));
+apiRouter.use('/analytics', createAnalyticsRoutes(db));
 
-apiRouter.use('/settings', requireLogin, createSettingsRoutes(db));
-protectedApiRouter.use('/settings', requireLogin, createProtectedSettingsRoutes(db));
+apiRouter.use('/settings', createSettingsRoutes(db));
+protectedApiRouter.use('/settings', createProtectedSettingsRoutes(db));
 
 apiRouter.use('/exchange-rates', createExchangeRateRoutes(db));
-protectedApiRouter.use('/exchange-rates', requireLogin, createProtectedExchangeRateRoutes(db, exchangeRateScheduler));
+protectedApiRouter.use('/exchange-rates', createProtectedExchangeRateRoutes(db, exchangeRateScheduler));
 
-apiRouter.use('/payment-history', requireLogin, createPaymentHistoryRoutes(db));
-protectedApiRouter.use('/payment-history', requireLogin, createProtectedPaymentHistoryRoutes(db));
+apiRouter.use('/payment-history', createPaymentHistoryRoutes(db));
+protectedApiRouter.use('/payment-history', createProtectedPaymentHistoryRoutes(db));
 
-apiRouter.use('/monthly-category-summary', requireLogin, createMonthlyCategorySummaryRoutes(db));
-protectedApiRouter.use('/monthly-category-summary', requireLogin, createProtectedMonthlyCategorySummaryRoutes(db));
 
-apiRouter.use('/categories', requireLogin, createCategoriesRoutes(db));
-protectedApiRouter.use('/categories', requireLogin, createProtectedCategoriesRoutes(db));
 
-apiRouter.use('/payment-methods', requireLogin, createPaymentMethodsRoutes(db));
-protectedApiRouter.use('/payment-methods', requireLogin, createProtectedPaymentMethodsRoutes(db));
+apiRouter.use('/monthly-category-summary', createMonthlyCategorySummaryRoutes(db));
+protectedApiRouter.use('/monthly-category-summary', createProtectedMonthlyCategorySummaryRoutes(db));
 
-apiRouter.use('/subscription-renewal-scheduler', requireLogin, createSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
-protectedApiRouter.use('/subscription-renewal-scheduler', requireLogin, createProtectedSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
+apiRouter.use('/categories', createCategoriesRoutes(db));
+protectedApiRouter.use('/categories', createProtectedCategoriesRoutes(db));
+
+apiRouter.use('/payment-methods', createPaymentMethodsRoutes(db));
+protectedApiRouter.use('/payment-methods', createProtectedPaymentMethodsRoutes(db));
+
+apiRouter.use('/subscription-renewal-scheduler', createSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
+protectedApiRouter.use('/subscription-renewal-scheduler', createProtectedSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
 
 // Notification routes
-apiRouter.use('/notifications', requireLogin, createNotificationRoutes(db));
-protectedApiRouter.use('/notifications', requireLogin, createProtectedNotificationRoutes(db));
+apiRouter.use('/notifications', createNotificationRoutes(db));
+protectedApiRouter.use('/notifications', createProtectedNotificationRoutes(db));
 
 // Scheduler routes
-apiRouter.use('/scheduler', requireLogin, createSchedulerRoutes(notificationScheduler));
-protectedApiRouter.use('/scheduler', requireLogin, createProtectedSchedulerRoutes(notificationScheduler));
+apiRouter.use('/scheduler', createSchedulerRoutes(notificationScheduler));
+protectedApiRouter.use('/scheduler', createProtectedSchedulerRoutes(notificationScheduler));
 
 // User preferences routes
-apiRouter.use('/user-preferences', requireLogin, userPreferencesRoutes);
+apiRouter.use('/user-preferences', userPreferencesRoutes);
 
 // Template routes
-apiRouter.use('/templates', requireLogin, templatesRoutes);
+apiRouter.use('/templates', templatesRoutes);
 
 // Register routers
 app.use('/api', apiRouter);

@@ -76,7 +76,7 @@ A modern subscription management system that helps users easily manage and track
 - **Framework**: Express 5
 - **Database**: SQLite + better-sqlite3
 - **Scheduled Tasks**: node-cron
-- **API Authentication**: API Key
+- **API Authentication**: Session-based authentication with username/password
 - **Notifications**: Telegram Bot API + Email (planned)
 
 ### Deployment
@@ -90,13 +90,38 @@ A modern subscription management system that helps users easily manage and track
 - Node.js 20+
 - Docker & Docker Compose (recommended)
 
-### Docker Deployment (Recommended)
+### Quick Setup
 
 1. **Clone the project**
 ```bash
 git clone <repository-url>
 cd subscription-management
 ```
+
+2. **Run setup script**
+```bash
+./setup.sh
+```
+
+3. **Configure authentication**
+   - Edit `.env` file with your username and password
+   - Run `cd server && npm run generate-password` to generate encrypted password
+   - Update `ADMIN_PASSWORD` in `.env` file
+
+4. **Start services**
+```bash
+# Terminal 1: Start backend
+cd server && npm start
+
+# Terminal 2: Start frontend
+npm run dev
+```
+
+5. **Access the application**
+   - Open http://localhost:5173/login
+   - Login with your credentials
+
+### Docker Deployment (Alternative)
 
 2. **Configure environment variables**
 ```bash

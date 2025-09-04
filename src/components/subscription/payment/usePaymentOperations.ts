@@ -15,12 +15,22 @@ interface PaymentApiData {
 }
 
 export const usePaymentOperations = (
+  apiKey: string | undefined,
   fetchPaymentHistory: () => void
 ) => {
   const { toast } = useToast()
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null)
 
   const handleAddPayment = async (paymentData: PaymentApiData) => {
+    if (!apiKey) {
+      toast({
+        title: "Error",
+        description: "API key not configured. Please set your API key in Settings.",
+        variant: "destructive",
+      })
+      throw new Error('API key not configured')
+    }
+
     try {
       await apiClient.post('/protected/payment-history', paymentData)
       
@@ -42,6 +52,15 @@ export const usePaymentOperations = (
   }
 
   const handleEditPayment = async (paymentId: number, paymentData: PaymentApiData) => {
+    if (!apiKey) {
+      toast({
+        title: "Error",
+        description: "API key not configured. Please set your API key in Settings.",
+        variant: "destructive",
+      })
+      throw new Error('API key not configured')
+    }
+
     try {
       await apiClient.put(`/protected/payment-history/${paymentId}`, paymentData)
       
@@ -67,6 +86,15 @@ export const usePaymentOperations = (
   const handleDeletePayment = async () => {
     if (!deleteTarget) return
     
+    if (!apiKey) {
+      toast({
+        title: "Error",
+        description: "API key not configured. Please set your API key in Settings.",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       await apiClient.delete(`/protected/payment-history/${deleteTarget.id}`)
       

@@ -31,12 +31,13 @@
   - src/components/notification/*：通知设置 UI（TelegramConfig、NotificationRules、SchedulerSettings 等）
 
 ### 环境变量与运行前置
-- API_KEY：受保护接口所需的 X-API-KEY
+- ADMIN_USERNAME：管理员用户名
+- ADMIN_PASSWORD：管理员密码（bcrypt加密）
 - TELEGRAM_BOT_TOKEN：Telegram Bot Token
 - NOTIFICATION_DEFAULT_CHANNELS（可选，JSON 字符串，默认 ["telegram"]）
 - NOTIFICATION_DEFAULT_LANGUAGE（可选，默认 zh-CN）
 
-注意：受保护接口必须在请求头中携带 X-API-KEY（server/middleware/auth.js）。
+注意：受保护接口需要用户登录后的有效session（server/middleware/auth.js）。
 
 ### 数据库结构（关键表）
 - notification_settings（每种通知类型一条，支持用户维度）
@@ -79,7 +80,7 @@
 - GET /api/templates/template?notificationType=...&language=...&channel=...
 - GET /api/templates/overview
 
-### API 一览（需要 X-API-KEY 的归类为 /api/protected）
+### API 一览（需要登录验证的归类为 /api/protected）
 
 - 通知设置（Protected：/api/protected/notifications）
   - GET /settings/:userId
@@ -122,35 +123,35 @@
 - 更新通知设置
   curl -X PUT \
        -H "Content-Type: application/json" \
-       -H "X-API-KEY: $API_KEY" \
+       -H "Cookie: session=your-session-cookie" \
        -d '{"is_enabled":true,"advance_days":7,"notification_channels":["telegram"],"repeat_notification":false}' \
        http://localhost:3001/api/protected/notifications/settings/1
 
 - 配置 Telegram 渠道
   curl -X POST \
        -H "Content-Type: application/json" \
-       -H "X-API-KEY: $API_KEY" \
+       -H "Cookie: session=your-session-cookie" \
        -d '{"channel_type":"telegram","config":{"chat_id":"123456789"}}' \
        http://localhost:3001/api/protected/notifications/channels
 
 - 发送测试通知
   curl -X POST \
        -H "Content-Type: application/json" \
-       -H "X-API-KEY: $API_KEY" \
+       -H "Cookie: session=your-session-cookie" \
        -d '{"channel_type":"telegram"}' \
        http://localhost:3001/api/protected/notifications/test
 
 - 手动发送通知
   curl -X POST \
        -H "Content-Type: application/json" \
-       -H "X-API-KEY: $API_KEY" \
+       -H "Cookie: session=your-session-cookie" \
        -d '{"subscription_id":42,"notification_type":"renewal_reminder","channels":["telegram"]}' \
        http://localhost:3001/api/protected/notifications/send
 
 - 更新调度器设置
   curl -X PUT \
        -H "Content-Type: application/json" \
-       -H "X-API-KEY: $API_KEY" \
+       -H "Cookie: session=your-session-cookie" \
        -d '{"notification_check_time":"09:00","timezone":"Asia/Shanghai","is_enabled":true}' \
        http://localhost:3001/api/protected/scheduler/settings
 
@@ -173,7 +174,7 @@
 - 使用 /api/protected/notifications/test 进行渠道连通性测试
 
 ### 错误处理与排查
-- 401：缺少或错误的 X-API-KEY
+- 401：缺少或无效的登录session
 - 400：请求参数校验失败（见控制器内 validator）
 - Telegram 发送失败常见原因：
   - 未配置 TELEGRAM_BOT_TOKEN

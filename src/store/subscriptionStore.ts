@@ -661,6 +661,12 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       // Process automatic renewals for subscriptions that are due
       processAutoRenewals: async (skipRefresh = false) => {
         try {
+          // Check if API key is available
+          const { apiKey } = useSettingsStore.getState()
+          if (!apiKey) {
+            console.warn('API key not configured, skipping auto renewals')
+            return { processed: 0, errors: 0 }
+          }
 
           const result = await apiClient.post<{ processed: number; errors: number }>('/protected/subscriptions/auto-renew')
 
@@ -679,6 +685,12 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       // Process expired manual subscriptions
       processExpiredSubscriptions: async (skipRefresh = false) => {
         try {
+          // Check if API key is available
+          const { apiKey } = useSettingsStore.getState()
+          if (!apiKey) {
+            console.warn('API key not configured, skipping expired subscription processing')
+            return { processed: 0, errors: 0 }
+          }
 
           const result = await apiClient.post<{ processed: number; errors: number }>('/subscriptions/process-expired')
 
@@ -697,6 +709,11 @@ export const useSubscriptionStore = create<SubscriptionState>()(
       // Manual renewal for a specific subscription
       manualRenewSubscription: async (id: number) => {
         try {
+          // Check if API key is available
+          const { apiKey } = useSettingsStore.getState()
+          if (!apiKey) {
+            throw new Error('API key not configured. Please set your API key in Settings.')
+          }
 
           const result = await apiClient.post<{ renewalData: RenewalData }>(`/protected/subscriptions/${id}/manual-renew`)
 

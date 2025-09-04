@@ -33,7 +33,9 @@ interface SettingsApiResponse {
 export type ThemeType = 'light' | 'dark' | 'system'
 
 interface SettingsState {
-  // ...existing code...
+  // --- Synced with Backend ---
+  apiKey: string | null
+  setApiKey: (apiKey: string) => void
   currency: CurrencyType
   setCurrency: (currency: CurrencyType) => Promise<void>
   theme: ThemeType
@@ -63,15 +65,18 @@ interface SettingsState {
 }
 
 export const initialSettings = {
+  // Synced
+  apiKey: null,
   currency: BASE_CURRENCY,
   theme: 'system' as ThemeType,
   showOriginalCurrency: true,
+
   exchangeRates: DEFAULT_EXCHANGE_RATES,
   lastExchangeRateUpdate: null,
   exchangeRateConfigStatus: null,
   isLoading: false,
   error: null
-};
+}
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
@@ -111,7 +116,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
       },
       
-  // ...existing code...
+      setApiKey: (apiKey) => set({ apiKey }),
       
       setCurrency: async (currency) => {
         set({ currency })
@@ -176,6 +181,11 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       updateExchangeRatesFromApi: async () => {
+        const { apiKey } = get();
+        if (!apiKey) {
+          throw new Error('API key not configured');
+        }
+
         try {
           await ExchangeRateApi.updateRates();
           // 更新成功后重新获取汇率

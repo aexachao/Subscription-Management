@@ -12,7 +12,7 @@
 受保护的端点需要在请求头中包含API密钥：
 
 ```http
-X-API-KEY: your-api-key-here
+Cookie: session=your-session-cookie
 ```
 
 API密钥需要在 `.env` 文件中配置：`API_KEY=your-secret-key`
@@ -378,7 +378,7 @@ API密钥需要在 `.env` 文件中配置：`API_KEY=your-secret-key`
 ```bash
 curl -X POST http://localhost:3001/api/protected/subscriptions \
   -H "Content-Type: application/json" \
-  -H "X-API-KEY: your-api-key" \
+  -H "Cookie: session=your-session-cookie" \
   -d '{
     "name": "Netflix",
     "plan": "Premium",

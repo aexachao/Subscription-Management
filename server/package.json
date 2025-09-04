@@ -7,6 +7,7 @@
     "db:init": "node db/init.js",
     "db:migrate": "node db/migrate.js",
     "db:reset": "rm -f db/database.sqlite && node db/init.js",
+    "generate-password": "node scripts/generate-password.js",
     "test": "jest --config tests/jest.config.js",
     "test:watch": "jest --config tests/jest.config.js --watch",
     "test:coverage": "jest --config tests/jest.config.js --coverage"
@@ -17,6 +18,7 @@
   "description": "",
   "dependencies": {
     "axios": "^1.11.0",
+    "bcrypt": "^5.1.1",
     "better-sqlite3": "^12.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

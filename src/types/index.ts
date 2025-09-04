@@ -71,9 +71,12 @@ export interface YearlyExpense {
 
 // Settings types
 export interface Settings {
+  apiKey?: string;
   currency: string;
   theme: 'light' | 'dark' | 'system';
   exchangeRates?: Record<string, number>;
+
+
 }
 
 // API request/response types

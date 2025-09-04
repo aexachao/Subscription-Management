@@ -1,28 +1,16 @@
-import axios from 'axios';
+// API Configuration
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
-// Create axios instance with default config
-export const apiClient = axios.create({
-  baseURL: '/api',
-  timeout: 10000,
-  withCredentials: true, // Enable cookies for session authentication
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add request interceptor for authentication
-apiClient.interceptors.request.use(
-  (config) => {
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Add response interceptor (no redirect here; let route guard handle it)
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(error)
-);
+// API Headers
+export const getHeaders = (method: string = 'GET'): HeadersInit => {
+  const headers: HeadersInit = {};
+  
+  if (method !== 'GET') {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  return headers;
+};
 
 // API Response Types
 export interface ApiResponse<T> {
