@@ -13,29 +13,15 @@ export const apiClient = axios.create({
 // Add request interceptor for authentication
 apiClient.interceptors.request.use(
   (config) => {
-    // Add any additional headers if needed
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add response interceptor for handling authentication errors
+// Add response interceptor (no redirect here; let route guard handle it)
 apiClient.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    const status = error.response?.status;
-    if (status === 401) {
-      // 避免在登录页重复跳转导致无限刷新
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
-    }
-    return Promise.reject(error);
-  }
+  (response) => response,
+  (error) => Promise.reject(error)
 );
 
 // API Response Types
