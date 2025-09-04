@@ -69,10 +69,9 @@ const apiRouter = express.Router();
 const protectedApiRouter = express.Router();
 const requireLogin = require('./middleware/requireLogin');
 
-    
-  // 注册登录路由
-  const authRouter = require('./routes/auth');
-  apiRouter.use('/login', authRouter);
+// 注册登录路由
+const authRouter = require('./routes/auth');
+apiRouter.use('/login', authRouter);
 
 // Register route modules
 apiRouter.use('/subscriptions', requireLogin, createSubscriptionRoutes(db));
@@ -85,38 +84,36 @@ apiRouter.use('/settings', requireLogin, createSettingsRoutes(db));
 protectedApiRouter.use('/settings', requireLogin, createProtectedSettingsRoutes(db));
 
 apiRouter.use('/exchange-rates', createExchangeRateRoutes(db));
-protectedApiRouter.use('/exchange-rates', createProtectedExchangeRateRoutes(db, exchangeRateScheduler));
+protectedApiRouter.use('/exchange-rates', requireLogin, createProtectedExchangeRateRoutes(db, exchangeRateScheduler));
 
-apiRouter.use('/payment-history', createPaymentHistoryRoutes(db));
-protectedApiRouter.use('/payment-history', createProtectedPaymentHistoryRoutes(db));
+apiRouter.use('/payment-history', requireLogin, createPaymentHistoryRoutes(db));
+protectedApiRouter.use('/payment-history', requireLogin, createProtectedPaymentHistoryRoutes(db));
 
+apiRouter.use('/monthly-category-summary', requireLogin, createMonthlyCategorySummaryRoutes(db));
+protectedApiRouter.use('/monthly-category-summary', requireLogin, createProtectedMonthlyCategorySummaryRoutes(db));
 
+apiRouter.use('/categories', requireLogin, createCategoriesRoutes(db));
+protectedApiRouter.use('/categories', requireLogin, createProtectedCategoriesRoutes(db));
 
-apiRouter.use('/monthly-category-summary', createMonthlyCategorySummaryRoutes(db));
-protectedApiRouter.use('/monthly-category-summary', createProtectedMonthlyCategorySummaryRoutes(db));
+apiRouter.use('/payment-methods', requireLogin, createPaymentMethodsRoutes(db));
+protectedApiRouter.use('/payment-methods', requireLogin, createProtectedPaymentMethodsRoutes(db));
 
-apiRouter.use('/categories', createCategoriesRoutes(db));
-protectedApiRouter.use('/categories', createProtectedCategoriesRoutes(db));
-
-apiRouter.use('/payment-methods', createPaymentMethodsRoutes(db));
-protectedApiRouter.use('/payment-methods', createProtectedPaymentMethodsRoutes(db));
-
-apiRouter.use('/subscription-renewal-scheduler', createSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
-protectedApiRouter.use('/subscription-renewal-scheduler', createProtectedSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
+apiRouter.use('/subscription-renewal-scheduler', requireLogin, createSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
+protectedApiRouter.use('/subscription-renewal-scheduler', requireLogin, createProtectedSubscriptionRenewalSchedulerRoutes(subscriptionRenewalScheduler));
 
 // Notification routes
-apiRouter.use('/notifications', createNotificationRoutes(db));
-protectedApiRouter.use('/notifications', createProtectedNotificationRoutes(db));
+apiRouter.use('/notifications', requireLogin, createNotificationRoutes(db));
+protectedApiRouter.use('/notifications', requireLogin, createProtectedNotificationRoutes(db));
 
 // Scheduler routes
-apiRouter.use('/scheduler', createSchedulerRoutes(notificationScheduler));
-protectedApiRouter.use('/scheduler', createProtectedSchedulerRoutes(notificationScheduler));
+apiRouter.use('/scheduler', requireLogin, createSchedulerRoutes(notificationScheduler));
+protectedApiRouter.use('/scheduler', requireLogin, createProtectedSchedulerRoutes(notificationScheduler));
 
 // User preferences routes
-apiRouter.use('/user-preferences', userPreferencesRoutes);
+apiRouter.use('/user-preferences', requireLogin, userPreferencesRoutes);
 
 // Template routes
-apiRouter.use('/templates', templatesRoutes);
+apiRouter.use('/templates', requireLogin, templatesRoutes);
 
 // Register routers
 app.use('/api', apiRouter);
